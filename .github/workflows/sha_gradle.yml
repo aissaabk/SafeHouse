@@ -1,15 +1,50 @@
-- name: Generate SHA keys
-  run: |
-    cd android
+name: Generate SHA Keys (Android)
 
-    if [ ! -f "settings.gradle" ]; then
-      echo "❌ Not a valid Android project"
-      exit 1
-    fi
+on:
+  workflow_dispatch:
 
-    if [ -f "gradlew" ]; then
-      chmod +x gradlew
-      ./gradlew signingReport
-    else
-      gradle signingReport
-    fi
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout المشروع
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. إعداد Java
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # 3. التأكد من وجود مشروع Android
+      - name: Check Android folder
+        run: |
+          if [ ! -d "android" ]; then
+            echo "❌ android folder not found"
+            exit 1
+          fi
+          echo "✅ android folder exists"
+
+      # 4. الدخول لمجلد Android
+      - name: Generate SHA keys
+        run: |
+          cd android
+
+          echo "📁 Current directory:"
+          pwd
+
+          echo "📂 Listing files:"
+          ls -la
+
+          # إذا gradlew موجود
+          if [ -f "gradlew" ]; then
+            echo "✅ Using gradlew"
+            chmod +x gradlew
+            ./gradlew signingReport
+          else
+            echo "⚠️ gradlew not found, using system gradle"
+            gradle signingReport
+          fi
