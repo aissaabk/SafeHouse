@@ -1,4 +1,4 @@
-name: Build Android Debug (Firebase)
+name: Build Android Debug (Fixed)
 
 on:
   workflow_dispatch:
@@ -27,7 +27,33 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      # 5. Firebase config
+      # 5. Debug structure (مهم جدًا)
+      - name: Debug project structure
+        run: |
+          echo "===== ROOT ====="
+          ls -la
+          echo "===== ANDROID ====="
+          ls -la android || echo "❌ android folder not found"
+
+      # 6. إنشاء gradlew إذا غير موجود
+      - name: Generate Gradle Wrapper if missing
+        run: |
+          cd android
+
+          if [ ! -f "gradlew" ]; then
+            echo "⚠️ gradlew not found → generating..."
+            gradle wrapper
+          else
+            echo "✅ gradlew exists"
+          fi
+
+      # 7. إعطاء صلاحية التنفيذ
+      - name: Grant permission
+        run: |
+          cd android
+          chmod +x gradlew
+
+      # 8. إضافة Firebase config
       - name: Setup Firebase config
         env:
           FIREBASE_JSON: ${{ secrets.FIREBASE_JSON }}
@@ -37,34 +63,27 @@ jobs:
           if [ -n "$FIREBASE_JSON" ]; then
             echo "$FIREBASE_JSON" | base64 --decode > android/app/google-services.json
           else
+            echo "⚠️ No Firebase config found → creating dummy"
             echo '{"project_info":{}}' > android/app/google-services.json
           fi
 
-      # 6. Debug project structure
-      - name: Debug files
-        run: |
-          ls -la
-          echo "----"
-          ls -la android || echo "no android folder"
-
-      # 7. Gradle check
+      # 9. اختبار Gradle
       - name: Gradle check
         run: |
           cd android
-          chmod +x gradlew
           ./gradlew tasks
 
-      # 8. Build Debug APK
+      # 10. بناء Debug APK
       - name: Build Debug APK
         run: |
           cd android
           ./gradlew assembleDebug
 
-      # 9. Show APK
+      # 11. عرض الناتج
       - name: Show APK
         run: find android -name "*.apk"
 
-      # 10. Upload APK
+      # 12. رفع APK
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
