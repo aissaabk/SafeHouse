@@ -1,17 +1,33 @@
-name: Android Build Debug (Stable CI)
+name: Generate SHA Keys
 
 on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout
-- name: Generate SHA keys
-  run: |
-    keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
+      # 1. Checkout (اختياري لكنه أفضل)
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Setup Java
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # 3. Generate SHA report
+      - name: Generate SHA-1 and SHA-256
+        run: |
+          echo "🔑 Generating SHA keys..."
+          keytool -list -v \
+            -keystore ~/.android/debug.keystore \
+            -alias androiddebugkey \
+            -storepass android \
+            -keypass android
