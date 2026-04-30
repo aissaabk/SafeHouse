@@ -7,11 +7,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    # ⚠️ تأكد أن الاسم مطابق 100% داخل GitHub
-    environment: Environments
+    # 🔥 الحل الصحيح حسب توثيق GitHub
+    environment:
+      name: Environments
+      deployment: false
 
     steps:
-      # 1. Checkout
+      # 1. Checkout المشروع
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -22,68 +24,53 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      # 3. Install Gradle
+      # 3. Install Gradle (لإنشاء wrapper إذا ناقص)
       - name: Install Gradle
         run: |
           sudo apt-get update
           sudo apt-get install -y gradle
 
-      # 4. Debug Keystore
-      - name: Create Debug Keystore
+      # 4. التحقق من Firebase Secret
+      - name: Check Firebase Secret
         run: |
-          mkdir -p ~/.android
-          mkdir -p ~/.config/.android
+          if [ -z "${{ secrets.FIREBASE_JSON }}" ]; then
+            echo "❌ FIREBASE_JSON missing in Environment"
+            exit 1
+          fi
 
-          keytool -genkeypair \
-            -keystore ~/.android/debug.keystore \
-            -storepass android \
-            -alias androiddebugkey \
-            -keypass android \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -dname "CN=Android,O=Android,C=US"
-
-          cp ~/.android/debug.keystore ~/.config/.android/debug.keystore
-
-      # 5. Firebase config (FIXED)
+      # 5. إنشاء google-services.json
       - name: Setup Firebase config
         run: |
           cd android
           mkdir -p app
 
-          if [ -z "${{ secrets.FIREBASE_JSON }}" ]; then
-            echo "❌ FIREBASE_JSON is missing"
-            exit 1
-          fi
-
           printf "%s" "${{ secrets.FIREBASE_JSON }}" > app/google-services.json
 
           echo "✅ Firebase config created"
 
-      # 6. Gradle wrapper
+      # 6. إنشاء Gradle Wrapper إذا غير موجود
       - name: Setup Gradle Wrapper
         run: |
           cd android
 
           if [ ! -f "gradlew" ]; then
-            echo "⚠️ generating wrapper..."
+            echo "⚠️ gradlew missing → generating wrapper..."
             gradle wrapper --gradle-version 8.2
           fi
 
           chmod +x gradlew
 
-      # 7. Build APK
+      # 7. Build Debug APK
       - name: Build Debug APK
         run: |
           cd android
           ./gradlew assembleDebug --no-daemon
 
-      # 8. Show result
+      # 8. عرض الملفات الناتجة
       - name: Show APK
         run: find android -name "*.apk"
 
-      # 9. Upload
+      # 9. رفع APK
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
