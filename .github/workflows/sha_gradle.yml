@@ -34,6 +34,7 @@ jobs:
       - name: Generate SHA keys
         run: |
           if [ -f "gradlew" ]; then
+            cd android
             ./gradlew signingReport
           else
             gradle signingReport
