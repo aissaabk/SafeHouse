@@ -1,67 +1,62 @@
-name: Build Android APK
+name: Build Android Debug (Firebase)
 
 on:
-  push:
-    branches: [ main, develop ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      # 1. تحميل المشروع
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      # 2. Java
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: temurin
+          java-version: 17
 
+      # 3. Android SDK
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Decode google-services.json
+      # 4. وضع google-services.json
+      - name: Setup Firebase config
         env:
-          FIREBASE_SECRET: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          FIREBASE_JSON: ${{ secrets.FIREBASE_JSON }}
         run: |
-          if [ -n "$FIREBASE_SECRET" ]; then
-            echo "$FIREBASE_SECRET" | base64 --decode > app/google-services.json
+          mkdir -p android/app
+
+          if [ -n "$FIREBASE_JSON" ]; then
+            echo "$FIREBASE_JSON" | base64 --decode > android/app/google-services.json
           else
-            echo "⚠️ No Firebase secret found. Create a dummy file to pass build."
-            echo '{"project_info":{}}' > app/google-services.json
+            echo "⚠️ No Firebase config found, creating dummy file"
+            echo '{"project_info":{}}' > android/app/google-services.json
           fi
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+      # 5. Gradle check (اختياري)
+      - name: Gradle check
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew tasks
 
+      # 6. بناء Debug APK (موقّع تلقائياً)
       - name: Build Debug APK
-        run: ./gradlew assembleDebug
+        run: |
+          cd android
+          ./gradlew assembleDebug
 
+      # 7. عرض الملف
+      - name: Show APK
+        run: find android -name "*.apk"
+
+      # 8. رفع APK
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: smartguard-debug
-          path: app/build/outputs/apk/debug/*.apk
-
-      - name: Build Release APK (if keystore available)
-        if: secrets.KEYSTORE_BASE64 != ''
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: |
-          echo "$KEYSTORE_BASE64" | base64 --decode > keystore.jks
-          ./gradlew assembleRelease
-          -Pandroid.injected.signing.store.file=$(pwd)/keystore.jks
-          -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD
-          -Pandroid.injected.signing.key.alias=$KEY_ALIAS
-          -Pandroid.injected.signing.key.password=$KEY_PASSWORD
-
-      - name: Upload Release APK
-        if: success() && secrets.KEYSTORE_BASE64 != ''
-        uses: actions/upload-artifact@v4
-        with:
-          name: smartguard-release
-          path: app/build/outputs/apk/release/*.apk
+          name: app-debug
+          path: android/app/build/outputs/apk/debug/*.apk
