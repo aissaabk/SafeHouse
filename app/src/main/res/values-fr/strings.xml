@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">SmartGuard</string>
+    <string name="gas_value">Valeur de gaz</string>
+    <string name="status">Statut</string>
+    <string name="connection">Connexion</string>
+    <string name="last_seen">Dernière vue</string>
+    <string name="normal">Sécurisé</string>
+    <string name="warning">Avertissement</string>
+    <string name="danger">Danger</string>
+    <string name="connected">Connecté</string>
+    <string name="disconnected">Déconnecté</string>
+    <string name="select_language">Choisir la langue</string>
+    <string name="alert_warning_title">⚠️ Avertissement</string>
+    <string name="alert_warning_text">Gaz: %d - Avertissement</string>
+    <string name="alert_danger_title">🔥 Fuite de gaz!</string>
+    <string name="alert_danger_text">Valeur: %d - Évacuez!</string>
+</resources>

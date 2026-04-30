@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">SmartGuard</string>
+    <string name="gas_value">Gaswert</string>
+    <string name="status">Status</string>
+    <string name="connection">Verbindung</string>
+    <string name="last_seen">Zuletzt gesehen</string>
+    <string name="normal">Sicher</string>
+    <string name="warning">Warnung</string>
+    <string name="danger">Gefahr</string>
+    <string name="connected">Verbunden</string>
+    <string name="disconnected">Getrennt</string>
+    <string name="select_language">Sprache wählen</string>
+    <string name="alert_warning_title">⚠️ Gaswarnung</string>
+    <string name="alert_warning_text">Gaswert: %d - Warnstufe</string>
+    <string name="alert_danger_title">🔥 Gasaustritt!</string>
+    <string name="alert_danger_text">Wert: %d - Sofort evakuieren!</string>
+</resources>
