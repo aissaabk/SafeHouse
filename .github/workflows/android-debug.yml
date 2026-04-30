@@ -7,72 +7,24 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    # 🔥 الحل الصحيح حسب توثيق GitHub
-    environment:
-      name: Environments
-      deployment: false
-
     steps:
-      # 1. Checkout المشروع
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # 2. Java
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      # 3. Install Gradle (لإنشاء wrapper إذا ناقص)
-      - name: Install Gradle
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gradle
-
-      # 4. التحقق من Firebase Secret
-      - name: Check Firebase Secret
-        run: |
-          if [ -z "${{ secrets.FIREBASE_JSON }}" ]; then
-            echo "❌ FIREBASE_JSON missing in Environment"
-            exit 1
-          fi
-
-      # 5. إنشاء google-services.json
-      - name: Setup Firebase config
-        run: |
-          cd android
-          mkdir -p app
-
-          printf "%s" "${{ secrets.FIREBASE_JSON }}" > app/google-services.json
-
-          echo "✅ Firebase config created"
-
-      # 6. إنشاء Gradle Wrapper إذا غير موجود
-      - name: Setup Gradle Wrapper
-        run: |
-          cd android
-
-          if [ ! -f "gradlew" ]; then
-            echo "⚠️ gradlew missing → generating wrapper..."
-            gradle wrapper --gradle-version 8.2
-          fi
-
-          chmod +x gradlew
-
-      # 7. Build Debug APK
       - name: Build Debug APK
         run: |
           cd android
-          ./gradlew assembleDebug --no-daemon
+          chmod +x gradlew
+          ./gradlew clean assembleDebug --no-daemon
 
-      # 8. عرض الملفات الناتجة
-      - name: Show APK
-        run: find android -name "*.apk"
-
-      # 9. رفع APK
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: smartguard-debug
+          name: debug-apk
           path: android/app/build/outputs/apk/debug/*.apk
