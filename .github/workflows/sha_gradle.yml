@@ -1,4 +1,4 @@
-name: Generate SHA Keys (Android)
+name: Generate SHA Keys (Fixed Android CI)
 
 on:
   workflow_dispatch:
@@ -12,34 +12,49 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 2. إعداد Java
+      # 2. Setup Java
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      # 3. التأكد من وجود مشروع Android
-      - name: Check Android folder
+      # 3. التأكد من مجلد Android
+      - name: Check project structure
         run: |
+          echo "📁 Checking project..."
+          ls -la
+
           if [ ! -d "android" ]; then
             echo "❌ android folder not found"
             exit 1
           fi
+
           echo "✅ android folder exists"
 
-      # 4. الدخول لمجلد Android
+      # 4. إنشاء debug keystore بشكل مضمون
+      - name: Create Debug Keystore
+        run: |
+          mkdir -p ~/.android
+
+          keytool -genkey -v \
+            -keystore ~/.android/debug.keystore \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android,O=Android,C=US"
+
+      # 5. استخراج SHA keys
       - name: Generate SHA keys
         run: |
           cd android
 
-          echo "📁 Current directory:"
-          pwd
-
-          echo "📂 Listing files:"
+          echo "📂 Android directory:"
           ls -la
 
-          # إذا gradlew موجود
           if [ -f "gradlew" ]; then
             echo "✅ Using gradlew"
             chmod +x gradlew
