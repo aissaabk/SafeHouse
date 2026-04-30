@@ -11,7 +11,27 @@ jobs:
       # 1. Checkout المشروع
       - name: Checkout
         uses: actions/checkout@v4
+- name: Generate SHA keys (FIXED)
+  run: |
+    echo "📁 Preparing environment..."
 
+    mkdir -p ~/.android
+
+    # 🔥 إنشاء debug keystore بشكل مضمون
+    keytool -genkey -v \
+      -keystore ~/.android/debug.keystore \
+      -storepass android \
+      -alias androiddebugkey \
+      -keypass android \
+      -keyalg RSA \
+      -keysize 2048 \
+      -validity 10000 \
+      -dname "CN=Android,O=Android,C=US"
+
+    cd android
+
+    echo "📂 Running signing report..."
+    ./gradlew signingReport
       # 2. Setup Java
       - name: Setup Java
         uses: actions/setup-java@v4
