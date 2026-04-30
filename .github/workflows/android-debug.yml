@@ -1,8 +1,6 @@
-name: Build Android APK
+name: Build Android Debug APK
 
 on:
-  push:
-    branches: [ main, develop ]
   workflow_dispatch:
 
 jobs:
@@ -10,50 +8,87 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. تحميل المشروع
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      # 2. Java
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          distribution: temurin
+          java-version: 17
 
-      - name: Change to android directory
+      # 3. تثبيت Gradle (فقط لإنشاء wrapper)
+      - name: Install Gradle
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gradle
+
+      # 4. إنشاء debug keystore (مهم للـ SHA و build)
+      - name: Create Debug Keystore
+        run: |
+          mkdir -p ~/.android
+          mkdir -p ~/.config/.android
+
+          keytool -genkeypair \
+            -keystore ~/.android/debug.keystore \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android,O=Android,C=US"
+
+          cp ~/.android/debug.keystore ~/.config/.android/debug.keystore
+
+      # 5. إعداد Firebase (أفضل طريقة)
+      - name: Setup Firebase config
+        env:
+          FIREBASE_JSON: ${{ secrets.FIREBASE_JSON }}
         run: |
           cd android
-          echo "Working directory: $(pwd)"
-          ls -la
+          mkdir -p app
 
-      - name: Setup Gradle Wrapper (if missing)
-        run: |
-          cd android
-          if [ ! -f "gradlew" ]; then
-            echo "Gradle wrapper not found, creating..."
-            gradle wrapper --gradle-version 8.2
+          if [ -z "$FIREBASE_JSON" ]; then
+            echo "❌ FIREBASE_JSON secret is missing"
+            exit 1
           fi
+
+          printf "%s" "$FIREBASE_JSON" > app/google-services.json
+
+          echo "✅ google-services.json created"
+
+      # 6. إنشاء Gradle Wrapper إذا غير موجود
+      - name: Setup Gradle Wrapper
+        run: |
+          cd android
+
+          if [ ! -f "gradlew" ]; then
+            echo "⚠️ gradlew not found → generating..."
+            gradle wrapper --gradle-version 8.2
+          else
+            echo "✅ gradlew exists"
+          fi
+
           chmod +x gradlew
 
-      - name: Decode google-services.json
-        env:
-          FIREBASE_SECRET: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-        run: |
-          cd android
-          if [ -n "$FIREBASE_SECRET" ]; then
-            echo "$FIREBASE_SECRET" | base64 --decode > app/google-services.json
-            echo "✅ Firebase config restored."
-          else
-            echo "⚠️ No Firebase secret found. Creating dummy file."
-            echo '{"project_info":{}}' > app/google-services.json
-          fi
-
+      # 7. بناء Debug APK
       - name: Build Debug APK
         run: |
           cd android
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --no-daemon
 
-      - name: Upload Debug APK
+      # 8. عرض الملفات (للتأكد)
+      - name: Show APK
+        run: find android -name "*.apk"
+
+      # 9. رفع APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: smartguard-debug
-          path: android/app/build/outputs/apk/debug/*.apk
+          path: |
+            android/app/build/outputs/apk/debug/*.apk
+            android/app/app/build/outputs/apk/debug/*.apk
