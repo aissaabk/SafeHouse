@@ -1,14 +1,14 @@
-name: Android SHA Keys (Full Clean)
+name: Generate SHA Keys (No Gradlew)
 
 on:
   workflow_dispatch:
 
 jobs:
-  sha:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. تحميل المشروع
+      # 1. Checkout
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -19,13 +19,7 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      # 3. تثبيت Gradle (لأن gradlew غير موجود عندك)
-      - name: Install Gradle
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gradle
-
-      # 4. إنشاء debug keystore (ضروري لـ signingReport)
+      # 3. إنشاء debug keystore
       - name: Create Debug Keystore
         run: |
           mkdir -p ~/.android
@@ -40,31 +34,11 @@ jobs:
             -validity 10000 \
             -dname "CN=Android,O=Android,C=US"
 
-      # 5. التأكد من وجود مشروع Android
-      - name: Check Android Project
-        run: |
-          echo "📂 Repo structure:"
-          ls -R
-
-          if [ ! -d "android" ]; then
-            echo "❌ android folder not found"
-            exit 1
-          fi
-
-      # 6. إنشاء Gradle Wrapper إذا غير موجود
-      - name: Generate Gradle Wrapper (if missing)
-        run: |
-          cd android
-
-          if [ ! -f "gradlew" ]; then
-            echo "⚠️ gradlew missing → generating..."
-            gradle wrapper
-          fi
-
-          chmod +x gradlew
-
-      # 7. استخراج SHA
+      # 4. الدخول لمجلد android
       - name: Generate SHA keys
         run: |
           cd android
-          ./gradlew signingReport
+
+          echo "📂 Running Gradle directly..."
+
+          gradle signingReport
