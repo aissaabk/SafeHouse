@@ -1,42 +1,23 @@
-name: Generate SHA Keys (Clean)
+- name: Generate SHA keys (Clean)
+  run: |
+    echo "📁 Creating debug keystore..."
 
-on:
-  workflow_dispatch:
+    mkdir -p ~/.android
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+    keytool -genkeypair \
+      -keystore ~/.android/debug.keystore \
+      -storepass android \
+      -alias androiddebugkey \
+      -keypass android \
+      -keyalg RSA \
+      -keysize 2048 \
+      -validity 10000 \
+      -dname "CN=Android,O=Android,C=US"
 
-    steps:
-      # 1. Checkout
-      - name: Checkout
-        uses: actions/checkout@v4
+    echo "📂 Running Gradle signingReport..."
 
-      # 2. Java setup
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
+    cd android
 
-      # 3. Create debug keystore
-      - name: Create Debug Keystore
-        run: |
-          mkdir -p ~/.android
+    chmod +x gradlew || true
 
-          keytool -genkeypair \
-            -keystore ~/.android/debug.keystore \
-            -storepass android \
-            -alias androiddebugkey \
-            -keypass android \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -dname "CN=Android,O=Android,C=US"
-
-      # 4. Generate SHA keys
-      - name: Generate SHA Report
-        run: |
-          cd android
-          chmod +x gradlew || true
-          ./gradlew signingReport
+    ./gradlew signingReport
