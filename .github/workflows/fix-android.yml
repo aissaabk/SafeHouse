@@ -1,60 +1,42 @@
-name: Build Android Debug (Fixed)
+name: Android Build Debug (Stable CI)
 
 on:
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. تحميل المشروع
-      - name: Checkout
+      # 1. Checkout
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      # 2. Java
+      # 2. Java (مهم لـ Android 8+)
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      # 3. Android SDK
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      # 4. Setup Gradle
+      # 3. Gradle (بديل gradlew + wrapper)
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      # 5. Debug structure (مهم جدًا)
-      - name: Debug project structure
+      # 4. Debug structure (مهم جدًا)
+      - name: Show project structure
         run: |
-          echo "===== ROOT ====="
+          echo "📁 ROOT"
           ls -la
-          echo "===== ANDROID ====="
-          ls -la android || echo "❌ android folder not found"
 
-      # 6. إنشاء gradlew إذا غير موجود
-      - name: Generate Gradle Wrapper if missing
-        run: |
-          cd android
+          echo "📁 ANDROID"
+          ls -la android || echo "❌ android folder missing"
 
-          if [ ! -f "gradlew" ]; then
-            echo "⚠️ gradlew not found → generating..."
-            gradle wrapper
-          else
-            echo "✅ gradlew exists"
-          fi
-
-      # 7. إعطاء صلاحية التنفيذ
-      - name: Grant permission
-        run: |
-          cd android
-          chmod +x gradlew
-
-      # 8. إضافة Firebase config
-      - name: Setup Firebase config
+      # 5. Firebase config (اختياري)
+      - name: Setup Firebase
         env:
           FIREBASE_JSON: ${{ secrets.FIREBASE_JSON }}
         run: |
@@ -62,30 +44,6 @@ jobs:
 
           if [ -n "$FIREBASE_JSON" ]; then
             echo "$FIREBASE_JSON" | base64 --decode > android/app/google-services.json
+            echo "✅ Firebase config added"
           else
-            echo "⚠️ No Firebase config found → creating dummy"
-            echo '{"project_info":{}}' > android/app/google-services.json
-          fi
-
-      # 9. اختبار Gradle
-      - name: Gradle check
-        run: |
-          cd android
-          ./gradlew tasks
-
-      # 10. بناء Debug APK
-      - name: Build Debug APK
-        run: |
-          cd android
-          ./gradlew assembleDebug
-
-      # 11. عرض الناتج
-      - name: Show APK
-        run: find android -name "*.apk"
-
-      # 12. رفع APK
-      - name: Upload Debug APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug
-          path: android/app/build/outputs/apk/debug/*.apk
+            echo "⚠️ No
