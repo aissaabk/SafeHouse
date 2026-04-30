@@ -1,11 +1,43 @@
-name: Test Workflow
+name: Build Debug APK (No Manual Keystore)
 
 on:
   workflow_dispatch:
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - run: echo "WORKFLOW IS RUNNING"
+      # 1. Checkout
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Java
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # 3. Setup Gradle
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      # 4. Clean project
+      - name: Clean
+        run: gradle clean
+
+      # 5. Build Debug APK (🔥 بدون أي keystore منك)
+      - name: Build Debug APK
+        run: gradle assembleDebug
+
+      # 6. Show output
+      - name: Show APK
+        run: find . -name "*.apk"
+
+      # 7. Upload APK
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-apk
+          path: app/build/outputs/apk/debug/*.apk
