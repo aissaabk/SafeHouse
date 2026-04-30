@@ -18,7 +18,10 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-
+     - name: Setup Gradle
+       uses: gradle/actions/setup-gradle@v3
+     - name: Build Debug APK
+       run: ./gradlew assembleDebug
       # 3. Android SDK
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
