@@ -147,6 +147,6 @@ void loop() {
 }
 EOF
 
-echo "✅ تم إنشاء كود NodeMCU في nodemcu/gas_detector.ino"
+echo "✅ تم إنشاء كود NodeMCU في nodemcu/gaz_detector.ino"
 
 echo "✅ تم إنشاء جميع الملفات بنجاح"
