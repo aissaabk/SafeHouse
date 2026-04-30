@@ -1,89 +1,91 @@
-name: Auto Fix Android Structure
+name: Build Android Debug (Fixed)
 
 on:
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
-  fix:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout
+      # 1. تحميل المشروع
       - name: Checkout
         uses: actions/checkout@v4
+
+      # 2. Java
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
-          fetch-depth: 0
+          distribution: temurin
+          java-version: 17
 
-      # 2. Debug (مهم جدًا لمعرفة هل workflow يعمل)
-      - name: Debug start
+      # 3. Android SDK
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      # 4. Setup Gradle
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      # 5. Debug structure (مهم جدًا)
+      - name: Debug project structure
         run: |
-          echo "🚀 Workflow started"
-          pwd
+          echo "===== ROOT ====="
           ls -la
+          echo "===== ANDROID ====="
+          ls -la android || echo "❌ android folder not found"
 
-      # 3. إنشاء مجلد Android
-      - name: Create Android structure
+      # 6. إنشاء gradlew إذا غير موجود
+      - name: Generate Gradle Wrapper if missing
         run: |
-          echo "🔧 Creating Android structure..."
+          cd android
 
-          mkdir -p android/app/src/main/java/com/example/app
-          mkdir -p android/app/src/main/res
+          if [ ! -f "gradlew" ]; then
+            echo "⚠️ gradlew not found → generating..."
+            gradle wrapper
+          else
+            echo "✅ gradlew exists"
+          fi
 
-          cat > android/settings.gradle <<EOF
-include ':app'
-EOF
-
-          cat > android/build.gradle <<EOF
-plugins {
-    id 'com.android.application' version '8.2.0' apply false
-    id 'org.jetbrains.kotlin.android' version '1.9.0' apply false
-}
-EOF
-
-          cat > android/app/build.gradle <<EOF
-plugins {
-    id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'
-}
-
-android {
-    namespace "com.example.app"
-    compileSdk 34
-
-    defaultConfig {
-        applicationId "com.example.app"
-        minSdk 21
-        targetSdk 34
-        versionCode 1
-        versionName "1.0"
-    }
-}
-
-dependencies {
-    implementation 'androidx.core:core-ktx:1.12.0'
-    implementation 'androidx.appcompat:appcompat:1.6.1'
-}
-EOF
-
-      # 4. تحقق من الملفات
-      - name: Show structure
+      # 7. إعطاء صلاحية التنفيذ
+      - name: Grant permission
         run: |
-          echo "📁 Android folder:"
-          ls -R android
+          cd android
+          chmod +x gradlew
 
-      # 5. Commit (مهم)
-      - name: Commit changes
+      # 8. إضافة Firebase config
+      - name: Setup Firebase config
+        env:
+          FIREBASE_JSON: ${{ secrets.FIREBASE_JSON }}
         run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
+          mkdir -p android/app
 
-          git add .
+          if [ -n "$FIREBASE_JSON" ]; then
+            echo "$FIREBASE_JSON" | base64 --decode > android/app/google-services.json
+          else
+            echo "⚠️ No Firebase config found → creating dummy"
+            echo '{"project_info":{}}' > android/app/google-services.json
+          fi
 
-          git status
+      # 9. اختبار Gradle
+      - name: Gradle check
+        run: |
+          cd android
+          ./gradlew tasks
 
-          git diff --cached --quiet || git commit -m "🔧 Auto generate Android structure"
+      # 10. بناء Debug APK
+      - name: Build Debug APK
+        run: |
+          cd android
+          ./gradlew assembleDebug
 
-          git push
+      # 11. عرض الناتج
+      - name: Show APK
+        run: find android -name "*.apk"
+
+      # 12. رفع APK
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: android/app/build/outputs/apk/debug/*.apk
