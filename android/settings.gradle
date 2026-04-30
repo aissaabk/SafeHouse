@@ -1,3 +1,34 @@
+أرى المشكلة بوضوح: إعدادات settings.gradle تمنع إضافة مستودعات إضافية في build.gradle بفضل السطر:
+
+```groovy
+repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+```
+
+وهذا يتعارض مع وجود allprojects { repositories { ... } } في android/build.gradle.
+
+✅ الحل الأبسط والأفضل
+
+قم بإزالة قسم allprojects بالكامل من ملف android/build.gradle، لأن المستودعات معرفة بالفعل بشكل صحيح داخل settings.gradle. سيبقى الملف كما يلي:
+
+📁 android/build.gradle (بعد التعديل)
+
+```groovy
+plugins {
+    id 'com.android.application' version '8.2.0' apply false
+    id 'org.jetbrains.kotlin.android' version '1.9.22' apply false
+    id 'com.google.gms.google-services' version '4.4.4' apply false
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
+```
+
+لا تحتاج إلى قسم allprojects أو repositories هنا، لأن settings.gradle قام بتعريف google() و mavenCentral() بالفعل.
+
+📁 تأكد أيضًا من أن android/settings.gradle يحتوي على:
+
+```groovy
 pluginManagement {
     repositories {
         google()
@@ -7,7 +38,7 @@ pluginManagement {
 }
 
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)   // تغيير من FAIL_ON_PROJECT_REPOS إلى PREFER_SETTINGS
     repositories {
         google()
         mavenCentral()
@@ -16,3 +47,28 @@ dependencyResolutionManagement {
 
 rootProject.name = "SmartGuard"
 include ':app'
+```
+
+ملاحظة: استخدام PREFER_SETTINGS بدلاً من FAIL_ON_PROJECT_REPOS يسمح بإضافة مستودعات في build.gradle إذا لزم الأمر، لكننا لن نضيفها. هذا الخيار أكثر مرونة.
+
+---
+
+🚀 الخطوات العملية من الهاتف
+
+1. عدّل ملف android/build.gradle:
+   · اذهب إلى المستودع → android/ → اضغط على build.gradle.
+   · احذف الأسطر من allprojects { حتى }.
+   · احفظ التغييرات.
+2. عدّل ملف android/settings.gradle:
+   · داخل dependencyResolutionManagement، غيّر FAIL_ON_PROJECT_REPOS إلى PREFER_SETTINGS.
+3. أعد تشغيل workflow Build Android APK من تبويب Actions.
+
+---
+
+✅ نتيجة التعديل
+
+· لن يحدث تعارض بين المستودعات.
+· سيبني Gradle المشروع بنجاح.
+· ستحصل على APK جاهز.
+
+إذا ظهر أي خطأ آخر، أرسل رسالته وسأقوم بحلّه فوراً.
