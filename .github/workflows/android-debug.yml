@@ -1,0 +1,65 @@
+name: Build Android Debug APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. تحميل المشروع
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Java
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # 3. تثبيت Gradle
+      - name: Install Gradle
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gradle
+
+      # 4. إنشاء debug keystore (اختياري لكن أفضل)
+      - name: Create Debug Keystore
+        run: |
+          mkdir -p ~/.android
+          mkdir -p ~/.config/.android
+
+          keytool -genkeypair \
+            -keystore ~/.android/debug.keystore \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android,O=Android,C=US"
+
+          cp ~/.android/debug.keystore ~/.config/.android/debug.keystore
+
+      # 5. التأكد من Firebase config
+      - name: Ensure google-services.json
+        run: |
+          if [ ! -f "android/app/google-services.json" ]; then
+            echo "❌ google-services.json not found"
+            exit 1
+          fi
+
+      # 6. بناء Debug APK
+      - name: Build Debug APK
+        run: |
+          cd android
+          gradle assembleDebug
+
+      # 7. عرض الناتج
+      - name: Show APK
+        run: |
+          find android -name "*.apk"
+
+      # 8. رفع
