@@ -3,30 +3,33 @@ name: Auto Fix Android Project Structure
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   fix:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. تحميل الريبو
-      - name: Checkout
+      # 1. Checkout
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      # 2. إنشاء هيكل Android إذا غير موجود
+      # 2. إنشاء هيكل Android كامل
       - name: Create Android structure
         run: |
-          echo "🔧 Checking Android structure..."
+          echo "🔧 Creating Android structure..."
 
           mkdir -p android/app/src/main/java/com/example/app
           mkdir -p android/app/src/main/res
 
           # settings.gradle
-          cat > android/settings.gradle <<EOF
+          cat > android/settings.gradle <<'EOF'
 include ':app'
 EOF
 
           # root build.gradle
-          cat > android/build.gradle <<EOF
+          cat > android/build.gradle <<'EOF'
 plugins {
     id 'com.android.application' version '8.2.0' apply false
     id 'org.jetbrains.kotlin.android' version '1.9.0' apply false
@@ -35,7 +38,7 @@ plugins {
 EOF
 
           # app build.gradle
-          cat > android/app/build.gradle <<EOF
+          cat > android/app/build.gradle <<'EOF'
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
@@ -68,18 +71,12 @@ dependencies {
 }
 EOF
 
-      # 3. إنشاء Gradle Wrapper إذا غير موجود
-      - name: Generate Gradle Wrapper
-        run: |
-          cd android
-          gradle wrapper || true
-
-      # 4. عرض النتيجة
+      # 3. تحقق من الهيكل
       - name: Show structure
         run: |
           ls -R android
 
-      # 5. Commit الملفات الجديدة
+      # 4. Commit + Push (آمن)
       - name: Commit generated files
         run: |
           git config user.name "github-actions"
@@ -87,6 +84,6 @@ EOF
 
           git add android
 
-          git diff --cached --quiet || git commit -m "🔧 Auto-generate missing Android structure"
+          git diff --cached --quiet || git commit -m "🔧 Auto-generate Android structure"
 
           git push
