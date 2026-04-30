@@ -1,23 +1,70 @@
-- name: Generate SHA keys (Clean)
-  run: |
-    echo "📁 Creating debug keystore..."
+name: Android SHA Keys (Full Clean)
 
-    mkdir -p ~/.android
+on:
+  workflow_dispatch:
 
-    keytool -genkeypair \
-      -keystore ~/.android/debug.keystore \
-      -storepass android \
-      -alias androiddebugkey \
-      -keypass android \
-      -keyalg RSA \
-      -keysize 2048 \
-      -validity 10000 \
-      -dname "CN=Android,O=Android,C=US"
+jobs:
+  sha:
+    runs-on: ubuntu-latest
 
-    echo "📂 Running Gradle signingReport..."
+    steps:
+      # 1. تحميل المشروع
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    cd android
+      # 2. Java
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
 
-    chmod +x gradlew || true
+      # 3. تثبيت Gradle (لأن gradlew غير موجود عندك)
+      - name: Install Gradle
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gradle
 
-    ./gradlew signingReport
+      # 4. إنشاء debug keystore (ضروري لـ signingReport)
+      - name: Create Debug Keystore
+        run: |
+          mkdir -p ~/.android
+
+          keytool -genkeypair \
+            -keystore ~/.android/debug.keystore \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android,O=Android,C=US"
+
+      # 5. التأكد من وجود مشروع Android
+      - name: Check Android Project
+        run: |
+          echo "📂 Repo structure:"
+          ls -R
+
+          if [ ! -d "android" ]; then
+            echo "❌ android folder not found"
+            exit 1
+          fi
+
+      # 6. إنشاء Gradle Wrapper إذا غير موجود
+      - name: Generate Gradle Wrapper (if missing)
+        run: |
+          cd android
+
+          if [ ! -f "gradlew" ]; then
+            echo "⚠️ gradlew missing → generating..."
+            gradle wrapper
+          fi
+
+          chmod +x gradlew
+
+      # 7. استخراج SHA
+      - name: Generate SHA keys
+        run: |
+          cd android
+          ./gradlew signingReport
