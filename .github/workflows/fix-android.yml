@@ -1,10 +1,7 @@
-name: Android Build Debug (Stable CI)
+name: Generate SHA Keys (Android Clean)
 
 on:
   workflow_dispatch:
-
-permissions:
-  contents: write
 
 jobs:
   build:
@@ -12,38 +9,41 @@ jobs:
 
     steps:
       # 1. Checkout
-      - name: Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # 2. Java (مهم لـ Android 8+)
+      # 2. Java
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      # 3. Gradle (بديل gradlew + wrapper)
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-
-      # 4. Debug structure (مهم جدًا)
-      - name: Show project structure
+      # 3. إنشاء debug keystore
+      - name: Create Debug Keystore
         run: |
-          echo "📁 ROOT"
+          mkdir -p ~/.android
+
+          keytool -genkeypair \
+            -keystore ~/.android/debug.keystore \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android,O=Android,C=US"
+
+      # 4. الدخول لمجلد android الصحيح
+      - name: Generate SHA keys
+        run: |
+          echo "📁 Root structure:"
+          ls -R
+
+          cd android
+
+          echo "📂 Android folder:"
           ls -la
 
-          echo "📁 ANDROID"
-          ls -la android || echo "❌ android folder missing"
-
-      # 5. Firebase config (اختياري)
-      - name: Setup Firebase
-        env:
-          FIREBASE_JSON: ${{ secrets.FIREBASE_JSON }}
-        run: |
-          mkdir -p android/app
-
-          if [ -n "$FIREBASE_JSON" ]; then
-            echo "$FIREBASE_JSON" | base64 --decode > android/app/google-services.json
-            echo "✅ Firebase config added"
-          else
-            echo "⚠️ No
+          echo "🚀 Running signingReport..."
+          gradle signingReport
