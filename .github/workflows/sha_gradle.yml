@@ -1,4 +1,4 @@
-name: Generate SHA Keys (Fixed Android CI)
+name: Generate SHA Keys (Clean)
 
 on:
   workflow_dispatch:
@@ -8,56 +8,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout المشروع
+      # 1. Checkout
       - name: Checkout
         uses: actions/checkout@v4
-- name: Generate SHA keys (FIXED)
-  run: |
-    echo "📁 Preparing environment..."
 
-    mkdir -p ~/.android
-
-    # 🔥 إنشاء debug keystore بشكل مضمون
-    keytool -genkey -v \
-      -keystore ~/.android/debug.keystore \
-      -storepass android \
-      -alias androiddebugkey \
-      -keypass android \
-      -keyalg RSA \
-      -keysize 2048 \
-      -validity 10000 \
-      -dname "CN=Android,O=Android,C=US"
-
-    cd android
-
-    echo "📂 Running signing report..."
-    ./gradlew signingReport
-      # 2. Setup Java
+      # 2. Java setup
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      # 3. التأكد من مجلد Android
-      - name: Check project structure
-        run: |
-          echo "📁 Checking project..."
-          ls -la
-
-          if [ ! -d "android" ]; then
-            echo "❌ android folder not found"
-            exit 1
-          fi
-
-          echo "✅ android folder exists"
-
-      # 4. إنشاء debug keystore بشكل مضمون
+      # 3. Create debug keystore
       - name: Create Debug Keystore
         run: |
           mkdir -p ~/.android
 
-          keytool -genkey -v \
+          keytool -genkeypair \
             -keystore ~/.android/debug.keystore \
             -storepass android \
             -alias androiddebugkey \
@@ -67,19 +34,9 @@ jobs:
             -validity 10000 \
             -dname "CN=Android,O=Android,C=US"
 
-      # 5. استخراج SHA keys
-      - name: Generate SHA keys
+      # 4. Generate SHA keys
+      - name: Generate SHA Report
         run: |
           cd android
-
-          echo "📂 Android directory:"
-          ls -la
-
-          if [ -f "gradlew" ]; then
-            echo "✅ Using gradlew"
-            chmod +x gradlew
-            ./gradlew signingReport
-          else
-            echo "⚠️ gradlew not found, using system gradle"
-            gradle signingReport
-          fi
+          chmod +x gradlew || true
+          ./gradlew signingReport
