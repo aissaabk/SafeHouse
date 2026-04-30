@@ -1,0 +1,92 @@
+name: Auto Fix Android Project Structure
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. تحميل الريبو
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. إنشاء هيكل Android إذا غير موجود
+      - name: Create Android structure
+        run: |
+          echo "🔧 Checking Android structure..."
+
+          mkdir -p android/app/src/main/java/com/example/app
+          mkdir -p android/app/src/main/res
+
+          # settings.gradle
+          cat > android/settings.gradle <<EOF
+include ':app'
+EOF
+
+          # root build.gradle
+          cat > android/build.gradle <<EOF
+plugins {
+    id 'com.android.application' version '8.2.0' apply false
+    id 'org.jetbrains.kotlin.android' version '1.9.0' apply false
+    id 'com.google.gms.google-services' version '4.4.0' apply false
+}
+EOF
+
+          # app build.gradle
+          cat > android/app/build.gradle <<EOF
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'com.google.gms.google-services'
+}
+
+android {
+    namespace "com.example.app"
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.example.app"
+        minSdk 21
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.11.0'
+}
+EOF
+
+      # 3. إنشاء Gradle Wrapper إذا غير موجود
+      - name: Generate Gradle Wrapper
+        run: |
+          cd android
+          gradle wrapper || true
+
+      # 4. عرض النتيجة
+      - name: Show structure
+        run: |
+          ls -R android
+
+      # 5. Commit الملفات الجديدة
+      - name: Commit generated files
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+
+          git add android
+
+          git diff --cached --quiet || git commit -m "🔧 Auto-generate missing Android structure"
+
+          git push
