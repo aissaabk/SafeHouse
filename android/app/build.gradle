@@ -2,7 +2,12 @@ plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
 }
-
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
 android {
     namespace "com.example.app"
     compileSdk 34
