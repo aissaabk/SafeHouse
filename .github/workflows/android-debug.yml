@@ -7,6 +7,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    # 🔴 ربط الـ Environment هنا (مهم جدًا)
+    environment: Environments
+
     steps:
       # 1. تحميل المشروع
       - name: Checkout code
@@ -19,13 +22,13 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      # 3. تثبيت Gradle (فقط لإنشاء wrapper)
+      # 3. تثبيت Gradle (لإنشاء wrapper إذا لزم)
       - name: Install Gradle
         run: |
           sudo apt-get update
           sudo apt-get install -y gradle
 
-      # 4. إنشاء debug keystore (مهم للـ SHA و build)
+      # 4. إنشاء Debug Keystore
       - name: Create Debug Keystore
         run: |
           mkdir -p ~/.android
@@ -43,22 +46,22 @@ jobs:
 
           cp ~/.android/debug.keystore ~/.config/.android/debug.keystore
 
-      # 5. إعداد Firebase (أفضل طريقة)
+      # 5. إعداد Firebase (من Environment Secret)
       - name: Setup Firebase config
-        env:
-          FIREBASE_JSON: ${{ secrets.FIREBASE_JSON }}
         run: |
           cd android
           mkdir -p app
 
-          if [ -z "$FIREBASE_JSON" ]; then
-            echo "❌ FIREBASE_JSON secret is missing"
+          if [ -z "${{ secrets.FIREBASE_JSON }}" ]; then
+            echo "❌ FIREBASE_JSON not found in Environment"
             exit 1
           fi
 
-          printf "%s" "$FIREBASE_JSON" > app/google-services.json
+          cat <<EOF > app/google-services.json
+${{ secrets.FIREBASE_JSON }}
+EOF
 
-          echo "✅ google-services.json created"
+          echo "✅ Firebase config created"
 
       # 6. إنشاء Gradle Wrapper إذا غير موجود
       - name: Setup Gradle Wrapper
@@ -74,13 +77,13 @@ jobs:
 
           chmod +x gradlew
 
-      # 7. بناء Debug APK
+      # 7. Build Debug APK
       - name: Build Debug APK
         run: |
           cd android
           ./gradlew assembleDebug --no-daemon
 
-      # 8. عرض الملفات (للتأكد)
+      # 8. عرض APK
       - name: Show APK
         run: find android -name "*.apk"
 
