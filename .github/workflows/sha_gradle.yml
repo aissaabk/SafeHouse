@@ -1,41 +1,15 @@
-name: Get SHA with Gradle
+- name: Generate SHA keys
+  run: |
+    cd android
 
-on:
-  workflow_dispatch:
+    if [ ! -f "settings.gradle" ]; then
+      echo "❌ Not a valid Android project"
+      exit 1
+    fi
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      # 1. Checkout
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      # 2. Setup Java
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-
-      # 3. Setup Gradle
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-
-      # 4. Make gradlew executable (إذا موجود)
-      - name: Prepare Gradle
-        run: |
-          if [ -f "gradlew" ]; then
-            chmod +x gradlew
-          fi
-
-      # 5. Generate SHA report
-      - name: Generate SHA keys
-        run: |
-          if [ -f "gradlew" ]; then
-            cd android
-            ./gradlew signingReport
-          else
-            gradle signingReport
-          fi
+    if [ -f "gradlew" ]; then
+      chmod +x gradlew
+      ./gradlew signingReport
+    else
+      gradle signingReport
+    fi
