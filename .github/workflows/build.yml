@@ -18,15 +18,16 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-     - name: Setup Gradle
-       uses: gradle/actions/setup-gradle@v3
-     - name: Build Debug APK
-       run: ./gradlew assembleDebug
+
       # 3. Android SDK
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # 4. وضع google-services.json
+      # 4. Setup Gradle
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      # 5. Firebase config
       - name: Setup Firebase config
         env:
           FIREBASE_JSON: ${{ secrets.FIREBASE_JSON }}
@@ -36,28 +37,34 @@ jobs:
           if [ -n "$FIREBASE_JSON" ]; then
             echo "$FIREBASE_JSON" | base64 --decode > android/app/google-services.json
           else
-            echo "⚠️ No Firebase config found, creating dummy file"
             echo '{"project_info":{}}' > android/app/google-services.json
           fi
 
-      # 5. Gradle check (اختياري)
+      # 6. Debug project structure
+      - name: Debug files
+        run: |
+          ls -la
+          echo "----"
+          ls -la android || echo "no android folder"
+
+      # 7. Gradle check
       - name: Gradle check
         run: |
           cd android
           chmod +x gradlew
           ./gradlew tasks
 
-      # 6. بناء Debug APK (موقّع تلقائياً)
+      # 8. Build Debug APK
       - name: Build Debug APK
         run: |
           cd android
           ./gradlew assembleDebug
 
-      # 7. عرض الملف
+      # 9. Show APK
       - name: Show APK
         run: find android -name "*.apk"
 
-      # 8. رفع APK
+      # 10. Upload APK
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
