@@ -1,59 +1,92 @@
-name: Build Android APK
+name: Build APK & AAB
 
 on:
-  push:
-    branches: [ main, develop ]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Change to android directory
+      # ✅ إنشاء Gradle Wrapper بالإصدار 8.14.3 حصراً
+      - name: Create Gradle Wrapper 8.14.3
         run: |
-          cd android
-          echo "Working directory: $(pwd)"
-          ls -la
-
-      - name: Setup Gradle Wrapper (if missing)
-        run: |
-          cd android
-          if [ ! -f "gradlew" ]; then
-            echo "Gradle wrapper not found, creating..."
-            gradle wrapper --gradle-version 8.2
-          fi
+          # إنشاء المجلدات
+          mkdir -p gradle/wrapper
+          
+          # إنشاء ملف properties مع تحديد الإصدار 8.14.3
+          cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
+          distributionBase=GRADLE_USER_HOME
+          distributionPath=wrapper/dists
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.14.3-bin.zip
+          zipStoreBase=GRADLE_USER_HOME
+          zipStorePath=wrapper/dists
+          EOF
+          
+          # تحميل wrapper jar المناسب للإصدار 8.14.3
+          curl -L -o gradle/wrapper/gradle-wrapper.jar \
+            https://raw.githubusercontent.com/gradle/gradle/v8.14.3/gradle/wrapper/gradle-wrapper.jar
+          
+          # تحميل gradlew
+          curl -L -o gradlew \
+            https://raw.githubusercontent.com/gradle/gradle/v8.14.3/gradlew
+          
+          # تحميل gradlew.bat
+          curl -L -o gradlew.bat \
+            https://raw.githubusercontent.com/gradle/gradle/v8.14.3/gradlew.bat
+          
+          # منح صلاحية التنفيذ
           chmod +x gradlew
 
-      - name: Decode google-services.json
-        env:
-          FIREBASE_SECRET: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      # ✅ التأكد من الإصدار 8.14.3
+      - name: Verify Gradle version is 8.14.3
         run: |
-          cd android
-          if [ -n "$FIREBASE_SECRET" ]; then
-            echo "$FIREBASE_SECRET" | base64 --decode > app/google-services.json
-            echo "✅ Firebase config restored."
-          else
-            echo "⚠️ No Firebase secret found. Creating dummy file."
-            echo '{"project_info":{}}' > app/google-services.json
-          fi
+          # عرض الإصدار المستخدم
+          ./gradlew --version
+          
+          # التأكد من أن الإصدار هو 8.14.3 بالضبط
+          ./gradlew --version | grep -q "Gradle 8.14.3" || {
+            echo "❌ Gradle version is NOT 8.14.3"
+            exit 1
+          }
+          echo "✅ Gradle 8.14.3 confirmed"
 
-      - name: Build Debug APK
+      # ✅ إنشاء google-services.json من secret
+      - name: Add Firebase config
         run: |
-          cd android
-          ./gradlew assembleDebug
+          mkdir -p android/app
+          echo '${{ secrets.FIREBASE_JSON }}' > android/app/google-services.json
 
-      - name: Upload Debug APK
+      # ✅ Build Debug APK
+      - name: Build APK
+        run: ./gradlew assembleDebug
+
+      # ✅ Build Debug AAB
+      - name: Build AAB
+        run: ./gradlew bundleDebug
+
+      # ✅ رفع APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: smartguard-debug
+          name: debug-apk
           path: android/app/build/outputs/apk/debug/*.apk
+
+      # ✅ رفع AAB
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-aab
+          path: android/app/build/outputs/bundle/debug/*.aab
