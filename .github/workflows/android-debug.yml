@@ -20,16 +20,11 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      # ✅ الانتقال إلى مجلد android
-      - name: Change to android directory
-        run: cd android
-
-      # ✅ إنشاء Gradle Wrapper داخل مجلد android
+      # ✅ إنشاء Gradle Wrapper 8.14.3 داخل مجلد android
       - name: Create Gradle Wrapper 8.14.3
         working-directory: ./android
         run: |
           mkdir -p gradle/wrapper
-          
           cat > gradle/wrapper/gradle-wrapper.properties << 'EOF'
           distributionBase=GRADLE_USER_HOME
           distributionPath=wrapper/dists
@@ -37,19 +32,15 @@ jobs:
           zipStoreBase=GRADLE_USER_HOME
           zipStorePath=wrapper/dists
           EOF
-          
           curl -L -o gradle/wrapper/gradle-wrapper.jar \
             https://raw.githubusercontent.com/gradle/gradle/v8.14.3/gradle/wrapper/gradle-wrapper.jar
-          
           curl -L -o gradlew \
             https://raw.githubusercontent.com/gradle/gradle/v8.14.3/gradlew
-          
           curl -L -o gradlew.bat \
             https://raw.githubusercontent.com/gradle/gradle/v8.14.3/gradlew.bat
-          
           chmod +x gradlew
 
-      # ✅ إنشاء variables.gradle (داخل مجلد android)
+      # ✅ إنشاء variables.gradle المفقود
       - name: Create missing variables.gradle
         working-directory: ./android
         run: |
@@ -63,19 +54,33 @@ jobs:
           }
           EOF
 
-      # ✅ إنشاء google-services.json (داخل android/app)
+      # ✅ تعديل AndroidManifest.xml (حذف سطر الأيقونة)
+      - name: Remove icon from manifest
+        working-directory: ./android
+        run: |
+          MANIFEST="app/src/main/AndroidManifest.xml"
+          if [ -f "$MANIFEST" ]; then
+            # حذف android:icon من application tag
+            sed -i 's/ android:icon="@mipmap\/ic_launcher"//g' "$MANIFEST"
+            sed -i 's/ android:icon="@mipmap\/ic_round"//g' "$MANIFEST"
+            echo "✅ Removed icon references from AndroidManifest.xml"
+          else
+            echo "⚠️ AndroidManifest.xml not found at $MANIFEST"
+          fi
+
+      # ✅ إنشاء google-services.json
       - name: Add Firebase config
         working-directory: ./android
         run: |
           mkdir -p app
           echo '${{ secrets.FIREBASE_JSON }}' > app/google-services.json
 
-      # ✅ Build Debug APK (من داخل مجلد android)
+      # ✅ Build Debug APK
       - name: Build APK
         working-directory: ./android
         run: ./gradlew assembleDebug
 
-      # ✅ Build Debug AAB (من داخل مجلد android)
+      # ✅ Build Debug AAB
       - name: Build AAB
         working-directory: ./android
         run: ./gradlew bundleDebug
