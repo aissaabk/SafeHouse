@@ -3,6 +3,9 @@ name: Move Files
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write   # 🔥 هذا هو الحل
+
 jobs:
   move:
     runs-on: ubuntu-latest
