@@ -1,0 +1,24 @@
+name: Move Files
+
+on:
+  workflow_dispatch:
+
+jobs:
+  move:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run move script
+        run: |
+          chmod +x move.sh
+          ./move.sh
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add .
+          git commit -m "Move files from app/app to app" || echo "No changes"
+          git push
