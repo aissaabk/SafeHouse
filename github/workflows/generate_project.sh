@@ -3,7 +3,7 @@
 
 set -e
 echo "🚀 بدء إنشاء المشروع المتكامل (المنزل الذكي)..."
-
+cd android
 # إنشاء الهيكل الرئيسي
 mkdir -p app/src/main/java/com/devbelmel/smartguard/presentation
 mkdir -p app/src/main/java/com/devbelmel/smartguard/utils
