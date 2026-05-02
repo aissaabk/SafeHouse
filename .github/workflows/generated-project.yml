@@ -1,4 +1,4 @@
-name: إنشاء مشروع SmartGuard تلقائياً
+name: remove app folder
 
 on:
   workflow_dispatch:    # يسمح بالتشغيل اليدوي من متصفح الهاتف
@@ -18,7 +18,7 @@ jobs:
       - name: تشغيل سكريبت إنشاء المشروع
         run: |
           # سيتم إنشاء جميع الملفات هنا
-          bash github/workflows/generate_project.sh
+          bash github/workflows/rm.sh
 
       - name: دفع التغييرات إلى المستودع
         run: |
