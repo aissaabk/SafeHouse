@@ -1,17 +1,28 @@
 <resources>
     <string name="app_name">حارس المنزل</string>
-    <string name="gas_value">قيمة الغاز</string>
-    <string name="status">الحالة</string>
-    <string name="connection">الاتصال</string>
-    <string name="last_seen">آخر ظهور</string>
+    <string name="username">اسم المستخدم</string>
+    <string name="password">كلمة المرور</string>
+    <string name="login">دخول</string>
+    <string name="contact_supplier">يتم إنشاء الحسابات من قبل مصنع اللوحة. تواصل مع المورد للحصول على بيانات الدخول.</string>
+    <string name="logout">تسجيل خروج</string>
+    <string name="gas">غاز</string>
+    <string name="fridge_temp">حرارة الثلاجة</string>
+    <string name="room_temp">حرارة المنزل</string>
+    <string name="water_level">مستوى الماء</string>
+    <string name="power_status">كهرباء</string>
+    <string name="motion_status">حركة</string>
+    <string name="available">موجود</string>
+    <string name="unavailable">غير موجود</string>
+    <string name="no_motion">لا حركة</string>
+    <string name="motion_detected">حركة مكتشفة</string>
+    <string name="connected">متصل</string>
+    <string name="disconnected">غير متصل</string>
     <string name="normal">آمن</string>
     <string name="warning">تحذير</string>
     <string name="danger">خطر</string>
-    <string name="connected">متصل</string>
-    <string name="disconnected">غير متصل</string>
-    <string name="select_language">اختر اللغة</string>
     <string name="alert_warning_title">⚠️ تحذير غاز</string>
     <string name="alert_warning_text">قيمة الغاز: %d - مستوى تحذيري</string>
     <string name="alert_danger_title">🔥 خطر تسرب غاز!</string>
     <string name="alert_danger_text">القيمة: %d - إخلاء فوري!</string>
+    <string name="select_language">اللغة</string>
 </resources>
