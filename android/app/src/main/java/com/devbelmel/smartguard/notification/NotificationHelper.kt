@@ -9,7 +9,6 @@ import com.devbelmel.smartguard.R
 
 class NotificationHelper(private val context: Context) {
     private val manager = context.getSystemService(NotificationManager::class.java)
-
     fun showWarningAlert(gasValue: Int) {
         createChannel()
         val notification = NotificationCompat.Builder(context, "gas_alerts")
@@ -21,7 +20,6 @@ class NotificationHelper(private val context: Context) {
             .build()
         manager.notify(1001, notification)
     }
-
     fun showDangerAlert(gasValue: Int) {
         createChannel()
         val notification = NotificationCompat.Builder(context, "gas_alerts")
@@ -33,7 +31,6 @@ class NotificationHelper(private val context: Context) {
             .build()
         manager.notify(1002, notification)
     }
-
     private fun createChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel("gas_alerts", "Gas Alerts", NotificationManager.IMPORTANCE_HIGH)

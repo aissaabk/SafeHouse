@@ -2,7 +2,7 @@ package com.devbelmel.smartguard.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.devbelmel.smartguard.data.model.GasSnapshot
+import com.devbelmel.smartguard.data.model.HomeSensorsData
 import com.devbelmel.smartguard.data.repository.GasRepository
 import com.devbelmel.smartguard.notification.NotificationHelper
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,30 +13,30 @@ class MainViewModel(
     private val repository: GasRepository,
     private val notificationHelper: NotificationHelper
 ) : ViewModel() {
-    private val _gasState = MutableStateFlow(GasSnapshot())
-    val gasState: StateFlow<GasSnapshot> = _gasState
-    private var lastAlert = 0
+    private val _homeData = MutableStateFlow(HomeSensorsData())
+    val homeData: StateFlow<HomeSensorsData> = _homeData
+    private var lastGasAlert = 0
 
     init {
         viewModelScope.launch {
-            repository.getGasFlow().collect { gas ->
-                _gasState.value = gas
-                checkAlert(gas.gasValue)
+            repository.getSensorsFlow().collect { data ->
+                _homeData.value = data
+                checkGasAlert(data.gas.value)
             }
         }
     }
 
-    private fun checkAlert(value: Int) {
+    private fun checkGasAlert(value: Int) {
         when {
-            value > 600 && lastAlert != 2 -> {
+            value > 600 && lastGasAlert != 2 -> {
                 notificationHelper.showDangerAlert(value)
-                lastAlert = 2
+                lastGasAlert = 2
             }
-            value in 301..600 && lastAlert != 1 -> {
+            value in 301..600 && lastGasAlert != 1 -> {
                 notificationHelper.showWarningAlert(value)
-                lastAlert = 1
+                lastGasAlert = 1
             }
-            value <= 300 -> lastAlert = 0
+            value <= 300 -> lastGasAlert = 0
         }
     }
 }

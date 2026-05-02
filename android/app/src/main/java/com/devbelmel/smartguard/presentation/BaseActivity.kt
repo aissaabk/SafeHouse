@@ -10,7 +10,5 @@ abstract class BaseActivity : AppCompatActivity() {
         val lang = LocaleHelper.getSavedLanguage(newBase)
         super.attachBaseContext(LocaleHelper.setLocale(newBase, lang))
     }
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-    }
+    override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState) }
 }
