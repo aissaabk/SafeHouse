@@ -1,2 +1,2 @@
-!bin/sh
-rm app
+#!/bin/bash
+rm -rf app
